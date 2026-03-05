@@ -78,11 +78,7 @@ extern "C" {
         count: usize,
     ) -> i32;
 
-    fn cpp_stk_for_each(
-        s: *const CppStringStack,
-        callback: CppStkIterFn,
-        ctx: *mut c_void,
-    );
+    fn cpp_stk_for_each(s: *const CppStringStack, callback: CppStkIterFn, ctx: *mut c_void);
 
     fn cpp_stk_from_csv(csv: *const c_char, len: usize) -> *mut CppStringStack;
 }
@@ -205,7 +201,8 @@ impl StringStack {
         }
         buf.truncate(needed);
         // The C++ side wrote UTF-8 (or at least ASCII); use lossy for safety.
-        Ok(String::from_utf8(buf).unwrap_or_else(|e| String::from_utf8_lossy(e.as_bytes()).into_owned()))
+        Ok(String::from_utf8(buf)
+            .unwrap_or_else(|e| String::from_utf8_lossy(e.as_bytes()).into_owned()))
     }
 
     /// Number of items on the stack.
@@ -273,14 +270,9 @@ impl StringStack {
 
     /// Push multiple strings at once.
     pub fn push_many(&mut self, items: &[&str]) {
-        let ptrs: Vec<*const c_char> = items
-            .iter()
-            .map(|s| s.as_ptr() as *const c_char)
-            .collect();
+        let ptrs: Vec<*const c_char> = items.iter().map(|s| s.as_ptr() as *const c_char).collect();
         let lens: Vec<usize> = items.iter().map(|s| s.len()).collect();
-        let rc = unsafe {
-            cpp_stk_push_many(self.ptr, ptrs.as_ptr(), lens.as_ptr(), items.len())
-        };
+        let rc = unsafe { cpp_stk_push_many(self.ptr, ptrs.as_ptr(), lens.as_ptr(), items.len()) };
         assert_eq!(rc, CPP_STK_OK);
     }
 

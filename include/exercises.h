@@ -199,7 +199,7 @@ extern "C"
     int32_t cpp_ex_get_error(char *out_msg, size_t msg_len,
                              char *out_type, size_t type_len,
                              int32_t *out_code);
-    void    cpp_ex_clear_error(void);
+    void cpp_ex_clear_error(void);
 
     int32_t cpp_ex_divide(double a, double b, double *out);
     int32_t cpp_ex_parse_int(const char *s, size_t len, int64_t *out);
@@ -217,26 +217,26 @@ extern "C"
     typedef struct CppStringStack CppStringStack;
 
     CppStringStack *cpp_stk_new(void);
-    void            cpp_stk_destroy(CppStringStack *s);
+    void cpp_stk_destroy(CppStringStack *s);
     CppStringStack *cpp_stk_clone(const CppStringStack *s);
 
     int32_t cpp_stk_push(CppStringStack *s, const char *str, size_t len);
     int32_t cpp_stk_pop(CppStringStack *s, char *out_buf, size_t buf_len,
-                         size_t *out_len);
+                        size_t *out_len);
     int32_t cpp_stk_peek(const CppStringStack *s, const char **out_ptr,
-                          size_t *out_len);
-    size_t  cpp_stk_size(const CppStringStack *s);
+                         size_t *out_len);
+    size_t cpp_stk_size(const CppStringStack *s);
 
     int32_t cpp_stk_join(const CppStringStack *s,
-                          const char *sep, size_t sep_len,
-                          char *out_buf, size_t buf_len, size_t *out_len);
+                         const char *sep, size_t sep_len,
+                         char *out_buf, size_t buf_len, size_t *out_len);
     int32_t cpp_stk_push_many(CppStringStack *s,
-                               const char *const *strings,
-                               const size_t *lengths, size_t count);
+                              const char *const *strings,
+                              const size_t *lengths, size_t count);
 
     typedef void (*CppStkIterFn)(const char *str, size_t len, void *ctx);
     void cpp_stk_for_each(const CppStringStack *s,
-                           CppStkIterFn callback, void *ctx);
+                          CppStkIterFn callback, void *ctx);
 
     CppStringStack *cpp_stk_from_csv(const char *csv, size_t len);
 

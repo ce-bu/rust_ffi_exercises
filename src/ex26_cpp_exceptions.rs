@@ -188,11 +188,7 @@ where
     let mut output = vec![0.0f64; input.len()];
 
     // Trampoline: calls the closure through a type-erased pointer.
-    extern "C" fn trampoline<F2>(
-        val: f64,
-        out: *mut f64,
-        ctx: *mut c_void,
-    ) -> i32
+    extern "C" fn trampoline<F2>(val: f64, out: *mut f64, ctx: *mut c_void) -> i32
     where
         F2: FnMut(f64) -> Result<f64, i32>,
     {
