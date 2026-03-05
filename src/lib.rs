@@ -59,3 +59,4 @@ pub mod ex21_bitflags;
 pub mod ex22_lifetimes;
 pub mod ex23_transmute;
 pub mod ex24_c_handles;
+pub mod ex25_cpp_virtual;

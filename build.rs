@@ -10,13 +10,17 @@ fn main() {
         .include("include")
         .compile("c_exercises");
 
-    // Compile the C++ helper for the vtable exercise.
+    // Compile the C++ helpers for the vtable exercises.
     cc::Build::new()
         .cpp(true)
         .file("csrc/ex11_shapes.cpp")
+        .file("csrc/ex25_cpp_virtual.cpp")
         .include("include")
         .compile("cpp_exercises");
 
     println!("cargo:rerun-if-changed=csrc/");
     println!("cargo:rerun-if-changed=include/");
+
+    // Ensure C++ standard library is linked (needed for integration tests)
+    println!("cargo:rustc-link-lib=stdc++");
 }
