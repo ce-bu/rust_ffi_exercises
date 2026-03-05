@@ -114,6 +114,16 @@ Run all exercises: `cargo test`
   *Concepts:* Itanium C++ ABI vtable layout, vptr reading, `#[repr(C)]` vtable structs, multiple inheritance pointer adjustment, `offset_to_top`, deleting vs complete destructors, in/out and out-parameters across virtual calls.
   *See also:* `docs/ex25_cpp_vtable_abi.md` for a detailed ABI guide with diagrams.
 
+- [ ] **Exercise 26 — C++ Exceptions Across FFI** (`src/ex26_cpp_exceptions.rs`)
+  C++ functions throw various exceptions (std::domain_error, std::invalid_argument, custom class, integer throw).  Every `extern "C"` wrapper catches all exceptions and stores error info in a thread-local.  Rust maps return codes to `Result<T, CppException>`.  Includes callback integration (C++ calls Rust closure).
+  *Concepts:* try/catch wrappers, thread-local exception storage, `catch(...)` catch-all, return-code → `Result`, callback + closure trampoline, non-`std::exception` throws.
+  *See also:* `docs/ex26_cpp_exceptions.md` for the C++ exception model and wrapper pattern guide.
+
+- [ ] **Exercise 27 — Wrapping C++ Classes & STL Types** (`src/ex27_cpp_stl.rs`)
+  Wrap a non-virtual C++ class (`CppStringStack`) that uses `std::vector<std::string>` internally.  Covers the opaque-pointer lifecycle (new/destroy/clone), std::string↔`&str` conversion, caller-provided buffers, **borrowed pointer return** (`peek` — zero-copy with a Rust lifetime guard), callback-based iteration, batch insertion, and factory functions.
+  *Concepts:* Opaque pointer pattern, RAII wrapper with `Drop` + `Clone`, `PeekGuard<'a>` encoding C++ borrow lifetime, `(const char*, size_t)` string passing, callback iteration, two-phase buffer protocol, factory wrapping.
+  *See also:* `docs/ex27_cpp_stl_wrapping.md` for patterns on wrapping C++ classes.
+
 ---
 
 ## Commands
@@ -158,9 +168,11 @@ For an experienced Rust developer with **no prior FFI experience**.  Times inclu
 | 23 | `transmute` & Reinterpretation | 45 min | ★★★☆☆ |
 | 24 | C-Owned Opaque Handles | 45 min | ★★★☆☆ |
 | 25 | C++ Virtual Functions (Direct Vtable) | 75 min | ★★★★★ |
-| | **Total** | **~18.5 hours** | |
+| 26 | C++ Exceptions Across FFI | 50 min | ★★★☆☆ |
+| 27 | Wrapping C++ Classes & STL Types | 60 min | ★★★★☆ |
+| | **Total** | **~20.5 hours** | |
 
-> **Tip:** Exercises 01–07 build linearly — do them in order.  After that, exercises are mostly independent and can be tackled in any order based on interest.  Exercise 25 requires understanding ex11 (vtable pattern) first.
+> **Tip:** Exercises 01–07 build linearly — do them in order.  After that, exercises are mostly independent and can be tackled in any order based on interest.  Exercise 25 requires understanding ex11 (vtable pattern) first.  Exercises 26 and 27 stand alone but pair well with ex25 for a complete C++ interop trilogy.
 
 ---
 
@@ -286,6 +298,27 @@ Stuck?  These hints cover the most common stumbling blocks across all exercises.
 - **In/out arguments** work the same through direct vtable calls — just pass `&mut value` as `*mut f64`.  The virtual method writes through the pointer.
 - `offset_to_top` at `vptr[-2]` tells you the byte offset from the sub-object back to the complete object — useful for MI diagnostics.
 - See `docs/ex25_cpp_vtable_abi.md` for the full ABI reference with ASCII diagrams.
+
+### C++ Exceptions Across FFI (ex26)
+
+- **Rule #1:** An exception that escapes an `extern "C"` function is **undefined behavior**.  Every `extern "C"` wrapper MUST have `try { ... } catch (...) { ... }`.
+- Always end your catch chain with `catch (...)` — C++ can throw non-`std::exception` types (e.g. `throw 42;`).
+- Use a **thread-local** `ExceptionInfo` struct to store the exception's message, type name, and error code.  The Rust side retrieves it after checking the return code.  This mirrors the `errno` / `GetLastError()` pattern.
+- Order catch blocks from most-specific to least-specific: `ProcessingError` → `std::invalid_argument` → `std::exception` → `...`.
+- For callbacks (C++ → Rust → C++): the Rust callback should **never panic**.  Return an error code instead.  Use `catch_unwind()` as a safety net if needed.
+- On the Rust side, build a `CppException` error type and a `check(rc) → Result<(), CppException>` helper.  Then every wrapper is just: `check(unsafe { cpp_ex_foo(...) })?; Ok(result)`.
+- See `docs/ex26_cpp_exceptions.md` for the full exception model guide.
+
+### Wrapping C++ Classes & STL Types (ex27)
+
+- **Opaque pointer pattern:** The C++ class lives on the heap.  Rust holds `*mut CppStringStack` (a zero-size opaque type) inside a RAII wrapper with `Drop`.
+- **std::string input:** Pass `(&str).as_ptr()` + `len` — no NUL terminator needed.  The C++ side constructs `std::string(ptr, len)`.
+- **std::string output (owned):** Use a two-phase protocol: first call with `buf = null` to get the needed length, then allocate and call again.
+- **std::string output (borrowed):** `peek()` returns a pointer directly into C++ memory.  Wrap it in a `PeekGuard<'a>` that borrows `&'a StringStack` to prevent mutation while the pointer is live.
+- **Clone = C++ copy constructor:** `cpp_stk_clone()` calls `new CppStringStack(*s)`.  Implement Rust's `Clone` trait.
+- **Callback iteration:** `for_each()` passes each element to a callback.  Use a trampoline that appends to a `Vec<String>` through a `*mut c_void` context pointer.
+- **Factory functions:** C++ static methods like `from_csv()` become `extern "C"` functions that return new opaque pointers.
+- See `docs/ex27_cpp_stl_wrapping.md` for the full wrapping patterns guide.
 
 ### Pin & Drop (ex16)
 

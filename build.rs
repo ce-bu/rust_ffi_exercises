@@ -10,11 +10,13 @@ fn main() {
         .include("include")
         .compile("c_exercises");
 
-    // Compile the C++ helpers for the vtable exercises.
+    // Compile the C++ helpers.
     cc::Build::new()
         .cpp(true)
         .file("csrc/ex11_shapes.cpp")
         .file("csrc/ex25_cpp_virtual.cpp")
+        .file("csrc/ex26_cpp_exceptions.cpp")
+        .file("csrc/ex27_cpp_stl.cpp")
         .include("include")
         .compile("cpp_exercises");
 

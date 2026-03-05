@@ -35,6 +35,8 @@
 //! 23. `ex23_transmute`       — transmute & type reinterpretation
 //! 24. `ex24_c_handles`       — C-owned opaque handles (out-parameter)
 //! 25. `ex25_cpp_virtual`     — Calling C++ virtual functions (direct vtable)
+//! 26. `ex26_cpp_exceptions`   — C++ exceptions across FFI boundaries
+//! 27. `ex27_cpp_stl`          — Wrapping C++ classes & STL types
 
 pub mod ex01_calling_c;
 pub mod ex02_rust_from_c;
@@ -61,3 +63,5 @@ pub mod ex22_lifetimes;
 pub mod ex23_transmute;
 pub mod ex24_c_handles;
 pub mod ex25_cpp_virtual;
+pub mod ex26_cpp_exceptions;
+pub mod ex27_cpp_stl;

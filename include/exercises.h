@@ -194,6 +194,52 @@ extern "C"
     size_t cpp_vt_ilabeled_offset_in_rect(void);
     size_t cpp_vt_ilabeled_offset_in_circle(void);
 
+    /* ── Ex26: C++ exceptions across FFI boundaries ──────────── */
+
+    int32_t cpp_ex_get_error(char *out_msg, size_t msg_len,
+                             char *out_type, size_t type_len,
+                             int32_t *out_code);
+    void    cpp_ex_clear_error(void);
+
+    int32_t cpp_ex_divide(double a, double b, double *out);
+    int32_t cpp_ex_parse_int(const char *s, size_t len, int64_t *out);
+    int32_t cpp_ex_sqrt(double x, double *out);
+    int32_t cpp_ex_process_data(const uint8_t *data, size_t len,
+                                int32_t *out_checksum);
+    int32_t cpp_ex_trigger_unknown(void);
+
+    typedef int32_t (*CppExMapFn)(double input, double *output, void *ctx);
+    int32_t cpp_ex_map_array(const double *input, double *output,
+                             size_t len, CppExMapFn map_fn, void *ctx);
+
+    /* ── Ex27: wrapping C++ classes & STL types ─────────────── */
+
+    typedef struct CppStringStack CppStringStack;
+
+    CppStringStack *cpp_stk_new(void);
+    void            cpp_stk_destroy(CppStringStack *s);
+    CppStringStack *cpp_stk_clone(const CppStringStack *s);
+
+    int32_t cpp_stk_push(CppStringStack *s, const char *str, size_t len);
+    int32_t cpp_stk_pop(CppStringStack *s, char *out_buf, size_t buf_len,
+                         size_t *out_len);
+    int32_t cpp_stk_peek(const CppStringStack *s, const char **out_ptr,
+                          size_t *out_len);
+    size_t  cpp_stk_size(const CppStringStack *s);
+
+    int32_t cpp_stk_join(const CppStringStack *s,
+                          const char *sep, size_t sep_len,
+                          char *out_buf, size_t buf_len, size_t *out_len);
+    int32_t cpp_stk_push_many(CppStringStack *s,
+                               const char *const *strings,
+                               const size_t *lengths, size_t count);
+
+    typedef void (*CppStkIterFn)(const char *str, size_t len, void *ctx);
+    void cpp_stk_for_each(const CppStringStack *s,
+                           CppStkIterFn callback, void *ctx);
+
+    CppStringStack *cpp_stk_from_csv(const char *csv, size_t len);
+
 #ifdef __cplusplus
 }
 #endif
