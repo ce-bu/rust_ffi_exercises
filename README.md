@@ -109,6 +109,11 @@ Run all exercises: `cargo test`
   The C library allocates an opaque `Session` handle internally and returns it via an **out-parameter** (`Session **out`). Rust receives the handle, wraps it in an RAII struct with `NonNull` + `Drop`, and builds a safe API where each C function's first `Session *` argument becomes `&self` / `&mut self`.
   *Concepts:* Out-parameter pattern (`*mut *mut T`), C-owned opaque handles, `NonNull` + `Drop` (C frees, not Rust), zero-sized opaque type, status-code → `Result` conversion, `CString` for outbound strings.
 
+- [ ] **Exercise 25 — Calling C++ Virtual Functions (Direct Vtable Access)** (`src/ex25_cpp_virtual.rs`)
+  Receive a pointer to a polymorphic C++ object (abstract interface with multiple inheritance) and call its virtual methods from Rust — **without writing any extern "C" trampoline functions**.  Instead, read the vptr from the object and call function pointers by slot index, exploiting the Itanium C++ ABI vtable layout.  Covers in/out arguments, out-parameters, destruction via the vtable's deleting destructor, and MI pointer adjustment.
+  *Concepts:* Itanium C++ ABI vtable layout, vptr reading, `#[repr(C)]` vtable structs, multiple inheritance pointer adjustment, `offset_to_top`, deleting vs complete destructors, in/out and out-parameters across virtual calls.
+  *See also:* `docs/ex25_cpp_vtable_abi.md` for a detailed ABI guide with diagrams.
+
 ---
 
 ## Commands
@@ -152,9 +157,10 @@ For an experienced Rust developer with **no prior FFI experience**.  Times inclu
 | 22 | Lifetimes with `PhantomData` | 45 min | ★★★☆☆ |
 | 23 | `transmute` & Reinterpretation | 45 min | ★★★☆☆ |
 | 24 | C-Owned Opaque Handles | 45 min | ★★★☆☆ |
-| | **Total** | **~17 hours** | |
+| 25 | C++ Virtual Functions (Direct Vtable) | 75 min | ★★★★★ |
+| | **Total** | **~18.5 hours** | |
 
-> **Tip:** Exercises 01–07 build linearly — do them in order.  After that, exercises are mostly independent and can be tackled in any order based on interest.
+> **Tip:** Exercises 01–07 build linearly — do them in order.  After that, exercises are mostly independent and can be tackled in any order based on interest.  Exercise 25 requires understanding ex11 (vtable pattern) first.
 
 ---
 
@@ -268,6 +274,18 @@ Stuck?  These hints cover the most common stumbling blocks across all exercises.
 - A vtable is just a `#[repr(C)]` struct of `extern "C" fn` pointers.
 - Use `static` vtables (not heap-allocated) — one per concrete type.
 - The `destroy` function pointer in the vtable must reconstruct the `Box` to free.
+
+### Direct C++ Vtable Access (ex25)
+
+- **Itanium ABI only:** This works on GCC/Clang (Linux, macOS, BSD).  It does NOT work on MSVC.
+- The **vptr** is the first field of every polymorphic C++ object.  Read it: `let vptr = *(obj as *const *const VtableStruct)`.
+- Virtual destructors occupy **two slots** in the Itanium ABI: slot 0 = complete destructor (D1, no dealloc), slot 1 = deleting destructor (D0, with dealloc).  Your methods start at slot 2.
+- To destroy: call the **deleting destructor** (slot 1) through the **primary base's** vtable.  The primary base pointer equals the allocation address.
+- **Multiple inheritance:** A class inheriting from N bases has N vptrs in its object layout.  Casting to a non-primary base **adjusts the pointer**.  Always use the correct interface pointer for each vtable.
+- **Verify slot numbering:** Use `clang++ -Xclang -fdump-vtable-layouts -c file.cpp 2>&1 | c++filt` to dump the vtable.  Or write a C++ helper that reads `vptr[slot]` and compare against your `#[repr(C)]` struct in tests.
+- **In/out arguments** work the same through direct vtable calls — just pass `&mut value` as `*mut f64`.  The virtual method writes through the pointer.
+- `offset_to_top` at `vptr[-2]` tells you the byte offset from the sub-object back to the complete object — useful for MI diagnostics.
+- See `docs/ex25_cpp_vtable_abi.md` for the full ABI reference with ASCII diagrams.
 
 ### Pin & Drop (ex16)
 

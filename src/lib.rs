@@ -34,6 +34,7 @@
 //! 22. `ex22_lifetimes`       — Lifetime encoding with PhantomData
 //! 23. `ex23_transmute`       — transmute & type reinterpretation
 //! 24. `ex24_c_handles`       — C-owned opaque handles (out-parameter)
+//! 25. `ex25_cpp_virtual`     — Calling C++ virtual functions (direct vtable)
 
 pub mod ex01_calling_c;
 pub mod ex02_rust_from_c;
