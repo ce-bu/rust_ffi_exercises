@@ -37,6 +37,7 @@
 //! 25. `ex25_cpp_virtual`     — Calling C++ virtual functions (direct vtable)
 //! 26. `ex26_cpp_exceptions`   — C++ exceptions across FFI boundaries
 //! 27. `ex27_cpp_stl`          — Wrapping C++ classes & STL types
+//! 28. `ex28_zst_ffi`          — Zero-sized types in FFI
 
 pub mod ex01_calling_c;
 pub mod ex02_rust_from_c;
@@ -65,3 +66,4 @@ pub mod ex24_c_handles;
 pub mod ex25_cpp_virtual;
 pub mod ex26_cpp_exceptions;
 pub mod ex27_cpp_stl;
+pub mod ex28_zst_ffi;

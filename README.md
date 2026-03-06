@@ -124,6 +124,10 @@ Run all exercises: `cargo test`
   *Concepts:* Opaque pointer pattern, RAII wrapper with `Drop` + `Clone`, `PeekGuard<'a>` encoding C++ borrow lifetime, `(const char*, size_t)` string passing, callback iteration, two-phase buffer protocol, factory wrapping.
   *See also:* `docs/ex27_cpp_stl_wrapping.md` for patterns on wrapping C++ classes.
 
+- [ ] **Exercise 28 — Zero-Sized Types in FFI** (`src/ex28_zst_ffi.rs`)
+  Explore ZSTs (zero-sized types) in FFI contexts: the `#[repr(C)]` empty-struct size mismatch with C, opaque incomplete types via `[u8; 0]`, type-safe handles using `PhantomData` markers, controlling `Send`/`Sync` with phantom fields, and the typestate pattern for compile-time protocol enforcement.
+  *Concepts:* ZST layout pitfalls, `[u8; 0]` opaque types, `PhantomData<Tag>` for type branding, `PhantomData<*mut ()>` for `!Send`/`!Sync`, typestate pattern, compile-time state machines.
+
 ---
 
 ## Commands
@@ -170,6 +174,7 @@ For an experienced Rust developer with **no prior FFI experience**.  Times inclu
 | 25 | C++ Virtual Functions (Direct Vtable) | 75 min | ★★★★★ |
 | 26 | C++ Exceptions Across FFI | 50 min | ★★★☆☆ |
 | 27 | Wrapping C++ Classes & STL Types | 60 min | ★★★★☆ |
+| 28 | Zero-Sized Types in FFI | 40 min | ★★★☆☆ |
 | | **Total** | **~20.5 hours** | |
 
 > **Tip:** Exercises 01–07 build linearly — do them in order.  After that, exercises are mostly independent and can be tackled in any order based on interest.  Exercise 25 requires understanding ex11 (vtable pattern) first.  Exercises 26 and 27 stand alone but pair well with ex25 for a complete C++ interop trilogy.
