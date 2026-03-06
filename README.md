@@ -128,6 +128,27 @@ Run all exercises: `cargo test`
   Explore ZSTs (zero-sized types) in FFI contexts: the `#[repr(C)]` empty-struct size mismatch with C, opaque incomplete types via `[u8; 0]`, type-safe handles using `PhantomData` markers, controlling `Send`/`Sync` with phantom fields, and the typestate pattern for compile-time protocol enforcement.
   *Concepts:* ZST layout pitfalls, `[u8; 0]` opaque types, `PhantomData<Tag>` for type branding, `PhantomData<*mut ()>` for `!Send`/`!Sync`, typestate pattern, compile-time state machines.
 
+- [ ] **Exercise 29 — `UnsafeCell` & Aliasing in FFI** (`src/ex29_unsafecell.rs`)
+  Understand why `UnsafeCell` is needed when C mutates memory that Rust holds as `&T`. Fix aliasing UB in a `#[repr(C)]` struct, build a safe sensor wrapper with interior mutability, share atomic counters between Rust and C, and observe the load-caching problem that `UnsafeCell` prevents.
+  *Concepts:* `UnsafeCell<T>`, LLVM `noalias readonly`, interior mutability in `#[repr(C)]` structs, `AtomicI32` as FFI-compatible `UnsafeCell`, Stacked Borrows.
+  *See also:* `docs/ex29_unsafecell_aliasing.md` for a deep dive on LLVM IR, aliasing optimizations, and usage patterns.
+
+---
+
+## Reference Documents
+
+In-depth guides and tutorials in the `docs/` directory:
+
+| Document | Related Exercise | Topic |
+|----------|-----------------|-------|
+| [ex14_panic_unwinding.md](docs/ex14_panic_unwinding.md) | Exercise 14 | Panic unwinding, `Drop` guarantees, unwind vs abort, FFI boundary hazard |
+| [ex15_miri_tutorial.md](docs/ex15_miri_tutorial.md) | Exercise 15 | Programmer's guide to Miri — reading errors, all 8 UB categories with examples and fixes, Stacked Borrows, Tree Borrows |
+| [ex16_pin_drop_guarantee.md](docs/ex16_pin_drop_guarantee.md) | Exercise 16 | Pin and the drop guarantee — why `Pin<Box<T>>` + `!Unpin` + `Drop` work together, usage patterns (callbacks, intrusive lists, async I/O) |
+| [ex25_cpp_vtable_abi.md](docs/ex25_cpp_vtable_abi.md) | Exercise 25 | Itanium C++ ABI vtable layout — vptr, slot numbering, multiple inheritance, pointer adjustment, deleting destructors |
+| [ex26_cpp_exceptions.md](docs/ex26_cpp_exceptions.md) | Exercise 26 | C++ exception model — try/catch wrappers, thread-local error storage, `catch(...)`, non-`std::exception` throws |
+| [ex27_cpp_stl_wrapping.md](docs/ex27_cpp_stl_wrapping.md) | Exercise 27 | Wrapping C++ classes and STL types — opaque pointers, `std::string` interop, borrowed returns, callback iteration |
+| [ex29_unsafecell_aliasing.md](docs/ex29_unsafecell_aliasing.md) | Exercise 29 | `UnsafeCell` and LLVM aliasing — `noalias readonly`, LLVM IR examples, when to use `UnsafeCell` in FFI, Stacked Borrows |
+
 ---
 
 ## Commands
@@ -175,6 +196,7 @@ For an experienced Rust developer with **no prior FFI experience**.  Times inclu
 | 26 | C++ Exceptions Across FFI | 50 min | ★★★☆☆ |
 | 27 | Wrapping C++ Classes & STL Types | 60 min | ★★★★☆ |
 | 28 | Zero-Sized Types in FFI | 40 min | ★★★☆☆ |
+| 29 | `UnsafeCell` & Aliasing in FFI | 45 min | ★★★★☆ |
 | | **Total** | **~20.5 hours** | |
 
 > **Tip:** Exercises 01–07 build linearly — do them in order.  After that, exercises are mostly independent and can be tackled in any order based on interest.  Exercise 25 requires understanding ex11 (vtable pattern) first.  Exercises 26 and 27 stand alone but pair well with ex25 for a complete C++ interop trilogy.
