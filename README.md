@@ -26,6 +26,7 @@ Run all exercises: `cargo test`
 - [ ] **Exercise 04 — C-String Passing** (`src/ex04_strings.rs`)
   Convert between Rust `&str`/`String` and C `*const c_char`/`*mut c_char`.
   *Concepts:* `CStr` (borrow), `CString` (own), `into_raw()` / `from_raw()`, caller-provided buffers.
+  *See also:* `docs/ex04_strings_ffi.md` for a comprehensive guide on string conversions, common mistakes, and buffer patterns.
 
 - [ ] **Exercise 05 — Opaque Handles** (`src/ex05_opaque.rs`)
   Hide a Rust `HashMap` behind an opaque `*mut Config` pointer.
@@ -141,6 +142,7 @@ In-depth guides and tutorials in the `docs/` directory:
 
 | Document | Related Exercise | Topic |
 |----------|-----------------|-------|
+| [ex04_strings_ffi.md](docs/ex04_strings_ffi.md) | Exercise 04 | Rust ↔ C string conversions, `CStr`/`CString` patterns, common mistakes (dangling pointers, leaks, missing NUL), buffer allocation |
 | [ex14_panic_unwinding.md](docs/ex14_panic_unwinding.md) | Exercise 14 | Panic unwinding, `Drop` guarantees, unwind vs abort, FFI boundary hazard |
 | [ex15_miri_tutorial.md](docs/ex15_miri_tutorial.md) | Exercise 15 | Programmer's guide to Miri — reading errors, all 8 UB categories with examples and fixes, Stacked Borrows, Tree Borrows |
 | [ex16_pin_drop_guarantee.md](docs/ex16_pin_drop_guarantee.md) | Exercise 16 | Pin and the drop guarantee — why `Pin<Box<T>>` + `!Unpin` + `Drop` work together, usage patterns (callbacks, intrusive lists, async I/O) |
