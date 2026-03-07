@@ -396,13 +396,30 @@ Permission Stack (top = active):
 **Rules:**
 1. Creating `&mut` pushes a **Unique** tag.
 2. Creating `&` pushes a **SharedRO** tag.
-3. Using a tag requires it to be on the stack.
-4. A write through tag N **pops everything above N**.
+3. Using a tag requires it to be **on the stack** — if it has been
+   popped, using it is **undefined behavior** (UB).
+4. A write through tag N **pops everything above N**. The write itself
+   is allowed (tag N is still on the stack), but it destroys the
+   permissions of every tag that was above it.
 5. A Unique access pops everything above it that isn't its own tag.
 
-This is why creating a new `&mut` invalidates old raw pointers — the
-new Unique tag is pushed, and when it's used, the old tags above it
-in logical order are popped.
+> **Key insight:** the stack is not "top-only access." Any tag still
+> present on the stack can be used. The catch is that accessing a tag
+> below the top **pops (invalidates)** everything above it. The actual
+> UB happens *later*, when something tries to use a tag that was already
+> popped.
+
+**Example — how a violation is detected:**
+
+```text
+1. ptr_a has tag=1 on the stack.
+2. You create &mut b → pushes Unique(tag=2) on top.
+        Stack: [ tag=0 (owner), tag=1, Unique(tag=2) ← top ]
+3. Write through b (tag=2) — fine, it's on the stack.
+4. Write through ptr_a (tag=1) — also allowed, but pops tag=2.
+        Stack: [ tag=0 (owner), tag=1 ← top ]
+5. Use b (tag=2) again → tag=2 is no longer on the stack → UB!
+```
 
 ---
 
