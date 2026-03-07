@@ -71,6 +71,36 @@ pub struct Listener {
 struct `!Unpin`. Without it, `Pin<Box<Listener>>` provides `DerefMut`
 and the value can be moved freely via `mem::swap` — defeating the point.
 
+**Why `mem::swap` works on `Unpin` types behind a Pin:**
+`Pin<Box<T>>` implements `DerefMut` *only* when `T: Unpin`. That impl
+hands you a plain `&mut T`, at which point the Pin wrapper is no longer
+in the picture — you have an ordinary mutable reference. With two
+`&mut T` values you can call `std::mem::swap()`, which bytewise
+relocates the contents of one `&mut T` into the other. The object moves
+to a new address, any raw pointers that C held to the old location
+become dangling, and you get undefined behavior. Adding
+`PhantomPinned` makes the type `!Unpin`, which removes the `DerefMut`
+impl, so safe code can never obtain `&mut T` and `mem::swap` becomes
+impossible.
+
+**What `mem::swap` actually breaks:**
+`mem::swap` performs a blind bytewise copy of the struct's bytes between
+two memory locations. It has no knowledge of any pointers — internal or
+external — that refer to those bytes. After the swap:
+
+| Scenario | What breaks |
+|----------|-------------|
+| **FFI** — C holds `*const T` to the old address | C's pointer is dangling; the object now lives at the other address |
+| **Self-referential** — a field points to a sibling field | The internal pointer still holds the *old* address, which now belongs to the other object |
+
+Both cases are the same underlying problem: **raw pointers are not
+updated when the pointee is relocated**. The only difference is *who*
+holds the stale pointer — C code, or a field inside the struct itself.
+This is exactly why `Pin` exists: it prevents the move that would make
+those pointers stale. The drop guarantee adds the FFI-specific piece:
+ensuring `Drop::drop()` runs (to deregister from C) before the memory
+is freed.
+
 ### Step 2: Pin before registering
 
 ```rust
@@ -161,6 +191,13 @@ fn broken() {
 
     // 💥 Move the value out of the Box
     let b = *a;                  // a is consumed, its memory freed
+    // What happened: `*a` is a special destructuring move that only Box
+    // supports. The BadListener value is bytewise-copied from the heap
+    // into `b` on the stack, then the Box's heap allocation is freed
+    // immediately (without running Drop on the inner value, since it was
+    // moved out, not dropped). There is no "empty Box" left — `a` is
+    // fully consumed and no longer exists.
+    //
     // C still holds `ptr` → dangling pointer!
     c_dispatch(42);              // undefined behavior
 }
