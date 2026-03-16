@@ -68,6 +68,12 @@ pub struct OpenFlags(pub u32);
 
 impl OpenFlags {
     // TODO: define constants READ, WRITE, CREATE, TRUNCATE, APPEND, NONE
+    pub const READ: OpenFlags = OpenFlags(0x01);
+    pub const WRITE: OpenFlags = OpenFlags(0x02);
+    pub const CREATE: OpenFlags = OpenFlags(0x04);
+    pub const TRUNCATE: OpenFlags = OpenFlags(0x08);
+    pub const APPEND: OpenFlags = OpenFlags(0x10);
+    pub const NONE: OpenFlags = OpenFlags(0x00);
 }
 
 // ── TODO 2 ─────────────────────────────────────────────────────
@@ -170,6 +176,10 @@ impl fmt::Debug for OpenFlags {
 
 pub struct FileHandle {
     // TODO: add fields for name, flags, content, position
+    name: String,
+    flags: OpenFlags,
+    content: Vec<u8>,
+    position: usize,
 }
 
 /// Open a file with the given flags.
@@ -181,10 +191,7 @@ pub struct FileHandle {
 /// # Safety
 /// `name` must be a valid NUL-terminated C string.
 #[no_mangle]
-pub unsafe extern "C" fn file_open(
-    name: *const c_char,
-    flags: OpenFlags,
-) -> *mut FileHandle {
+pub unsafe extern "C" fn file_open(name: *const c_char, flags: OpenFlags) -> *mut FileHandle {
     todo!(
         "Validate name and flags, create FileHandle, \
          if TRUNCATE clear content, Box::into_raw"
@@ -203,11 +210,7 @@ pub unsafe extern "C" fn file_open(
 /// - `handle` must be from `file_open`.
 /// - `data` must point to at least `len` bytes.
 #[no_mangle]
-pub unsafe extern "C" fn file_write(
-    handle: *mut FileHandle,
-    data: *const u8,
-    len: usize,
-) -> i32 {
+pub unsafe extern "C" fn file_write(handle: *mut FileHandle, data: *const u8, len: usize) -> i32 {
     todo!(
         "Check WRITE/APPEND flag, write bytes into content, \
          update position, return bytes written"
@@ -224,11 +227,7 @@ pub unsafe extern "C" fn file_write(
 /// - `handle` must be from `file_open`.
 /// - `buf` must be writable for at least `len` bytes.
 #[no_mangle]
-pub unsafe extern "C" fn file_read(
-    handle: *mut FileHandle,
-    buf: *mut u8,
-    len: usize,
-) -> i32 {
+pub unsafe extern "C" fn file_read(handle: *mut FileHandle, buf: *mut u8, len: usize) -> i32 {
     todo!(
         "Check READ flag, copy bytes from content[position..], \
          update position, return bytes read"
@@ -377,10 +376,7 @@ mod tests {
     fn test_ex21_read_requires_flag() {
         let name = CString::new("writeonly.txt").unwrap();
         unsafe {
-            let h = file_open(
-                name.as_ptr(),
-                OpenFlags::WRITE | OpenFlags::CREATE,
-            );
+            let h = file_open(name.as_ptr(), OpenFlags::WRITE | OpenFlags::CREATE);
             assert!(!h.is_null());
             let mut buf = [0u8; 32];
             assert_eq!(file_read(h, buf.as_mut_ptr(), buf.len()), -1);
@@ -449,7 +445,7 @@ mod tests {
 
             // Read from beginning: should see "HelloWorld"
             // Reset position to 0 for reading.
-            (*h).position = 0;  // direct field access in test
+            (*h).position = 0; // direct field access in test
             let mut buf = [0u8; 64];
             let r = file_read(h, buf.as_mut_ptr(), buf.len());
             assert_eq!(r, 10);

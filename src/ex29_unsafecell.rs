@@ -64,7 +64,6 @@ pub unsafe fn c_atomic_increment(counter: *const AtomicI32, amount: i32) {
     (*counter).fetch_add(amount, Ordering::SeqCst);
 }
 
-
 // ══════════════════════════════════════════════════════════════
 // Part A — The aliasing problem (fix the struct)
 // ══════════════════════════════════════════════════════════════
@@ -84,31 +83,33 @@ pub unsafe fn c_atomic_increment(counter: *const AtomicI32, amount: i32) {
 //   - `FixedDevice::status_ptr(&self) -> *mut u32` → for C to write to
 //
 // Hint:
-//   #[repr(C)]
-//   pub struct FixedDevice {
-//       pub id: u32,
-//       pub status: UnsafeCell<u32>,
-//   }
-//
-//   impl FixedDevice {
-//       pub fn status(&self) -> u32 {
-//           unsafe { *self.status.get() }
-//       }
-//       pub fn status_ptr(&self) -> *mut u32 {
-//           self.status.get()
-//       }
-//   }
+#[repr(C)]
+pub struct FixedDevice {
+    pub id: i32,
+    pub status: UnsafeCell<i32>,
+}
+
+impl FixedDevice {
+    pub fn status(&self) -> i32 {
+        todo!()
+    }
+    pub fn status_ptr(&self) -> *mut i32 {
+        todo!()
+    }
+    pub fn new(id: i32, status: u32) -> Self {
+        todo!()
+    }
+}
 
 /// Broken version — DO NOT USE in real code.  Shown for contrast.
 #[repr(C)]
 pub struct BrokenDevice {
     pub id: u32,
-    pub status: u32,   // ← NOT UnsafeCell — UB if C writes while &self exists
+    pub status: u32, // ← NOT UnsafeCell — UB if C writes while &self exists
 }
 
 // TODO: Define FixedDevice with UnsafeCell<u32> for status,
 //       and implement new(), status(), status_ptr().
-
 
 // ══════════════════════════════════════════════════════════════
 // Part B — Safe sensor wrapper
@@ -162,7 +163,6 @@ impl Sensor {
         todo!("TODO 2: return self.value.get()")
     }
 }
-
 
 // ══════════════════════════════════════════════════════════════
 // Part C — Atomic counters shared with C
@@ -223,7 +223,6 @@ impl SharedCounters {
     }
 }
 
-
 // ══════════════════════════════════════════════════════════════
 // Part D — Demonstrating the caching problem
 // ══════════════════════════════════════════════════════════════
@@ -258,10 +257,12 @@ pub fn observe_with_unsafecell() -> (i32, i32) {
     let before = unsafe { *cell.get() };
 
     // Mutate through UnsafeCell's raw pointer — this is legal.
-    unsafe { *cell.get() = 42; }
+    unsafe {
+        *cell.get() = 42;
+    }
 
     let after = unsafe { *cell.get() };
-    (before, after)  // Always (10, 42) — well-defined
+    (before, after) // Always (10, 42) — well-defined
 }
 
 /// Same idea, but using a plain value + raw pointer.
@@ -281,12 +282,13 @@ pub fn observe_without_unsafecell() -> (i32, i32) {
     // while a &T reference exists — which is UB without UnsafeCell.
     // Here we mutate directly to be safe in this demo.
     let ptr: *mut i32 = &mut val;
-    unsafe { *ptr = 42; }
+    unsafe {
+        *ptr = 42;
+    }
 
     let after = val;
-    (before, after)  // (10, 42) in this safe version
+    (before, after) // (10, 42) in this safe version
 }
-
 
 // ══════════════════════════════════════════════════════════════
 // Tests
@@ -311,18 +313,24 @@ mod tests {
         assert_eq!(dev.status(), 0);
 
         // Simulate C writing to the status field
-        unsafe { c_update_value(dev.status_ptr(), 42); }
+        unsafe {
+            c_update_value(dev.status_ptr(), 42);
+        }
         assert_eq!(dev.status(), 42);
 
         // C writes again
-        unsafe { c_update_value(dev.status_ptr(), 99); }
+        unsafe {
+            c_update_value(dev.status_ptr(), 99);
+        }
         assert_eq!(dev.status(), 99);
     }
 
     #[test]
     fn test_ex29_fixed_device_id_unchanged() {
         let dev = FixedDevice::new(7, 0);
-        unsafe { c_update_value(dev.status_ptr(), 123); }
+        unsafe {
+            c_update_value(dev.status_ptr(), 123);
+        }
         // id should not be affected
         assert_eq!(dev.id, 7);
     }
@@ -342,7 +350,9 @@ mod tests {
         assert_eq!(s.read(), 100);
 
         // C writes a new reading
-        unsafe { c_sensor_tick(s.value_ptr(), 200); }
+        unsafe {
+            c_sensor_tick(s.value_ptr(), 200);
+        }
         assert_eq!(s.read(), 200);
 
         // Check read count
@@ -395,7 +405,9 @@ mod tests {
         c.inc_requests(); // Rust increments
 
         // C increments through the raw pointer
-        unsafe { c_atomic_increment(c.requests_ptr(), 5); }
+        unsafe {
+            c_atomic_increment(c.requests_ptr(), 5);
+        }
 
         assert_eq!(c.requests(), 6); // 1 + 5
     }
@@ -446,9 +458,6 @@ mod tests {
     fn test_ex29_atomic_contains_unsafecell() {
         // AtomicI32 is repr(transparent) over UnsafeCell<i32>,
         // so it is layout-compatible with C's _Atomic int32_t.
-        assert_eq!(
-            std::mem::size_of::<AtomicI32>(),
-            std::mem::size_of::<i32>()
-        );
+        assert_eq!(std::mem::size_of::<AtomicI32>(), std::mem::size_of::<i32>());
     }
 }

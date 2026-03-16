@@ -66,9 +66,7 @@ use std::mem;
 /// # Safety
 /// The resulting pointer must only be cast back to the original
 /// function signature.
-pub unsafe fn fn_ptr_to_void(
-    fp: extern "C" fn(i32) -> i32,
-) -> *mut c_void {
+pub unsafe fn fn_ptr_to_void(fp: extern "C" fn(i32) -> i32) -> *mut c_void {
     todo!("transmute fp to *mut c_void")
 }
 
@@ -77,9 +75,7 @@ pub unsafe fn fn_ptr_to_void(
 /// # Safety
 /// `ptr` must have originated from a function with signature
 /// `extern "C" fn(i32) -> i32`.
-pub unsafe fn void_to_fn_ptr(
-    ptr: *mut c_void,
-) -> extern "C" fn(i32) -> i32 {
+pub unsafe fn void_to_fn_ptr(ptr: *mut c_void) -> extern "C" fn(i32) -> i32 {
     todo!("transmute ptr back to extern \"C\" fn(i32) -> i32")
 }
 
@@ -114,22 +110,15 @@ pub unsafe fn void_to_fn_ptr(
 /// # Safety
 /// If `raw != 0`, it must be a valid function with the correct
 /// signature.
-pub unsafe fn raw_to_optional_fn(
-    raw: usize,
-) -> Option<extern "C" fn(i32) -> i32> {
-    todo!(
-        "if raw == 0 {{ None }} else {{ Some(transmute(raw)) }}"
-    )
+pub unsafe fn raw_to_optional_fn(raw: usize) -> Option<extern "C" fn(i32) -> i32> {
+    todo!("if raw == 0 {{ None }} else {{ Some(transmute(raw)) }}")
 }
 
 /// Invoke an optional callback — the SAFE way.
 ///
 /// `Option<extern "C" fn(...)>` is FFI-safe and handles null
 /// natively.  No transmute needed.
-pub fn invoke_optional_callback(
-    cb: Option<extern "C" fn(i32) -> i32>,
-    arg: i32,
-) -> Option<i32> {
+pub fn invoke_optional_callback(cb: Option<extern "C" fn(i32) -> i32>, arg: i32) -> Option<i32> {
     todo!("cb.map(|f| f(arg))")
 }
 
@@ -174,17 +163,13 @@ pub enum Status {
 /// # Safety
 /// `code` MUST be one of: 0, -1, -2, -3.  Any other value is **UB**.
 pub unsafe fn status_from_int_transmute(code: i32) -> Status {
-    todo!(
-        "Assert code is valid, then mem::transmute(code)"
-    )
+    todo!("Assert code is valid, then mem::transmute(code)")
 }
 
 /// Convert integer to Status safely using a match.
 /// Returns `Err(code)` for unrecognised values.
 pub fn status_from_int_safe(code: i32) -> Result<Status, i32> {
-    todo!(
-        "match code {{ 0 => Ok(Status::Ok), -1 => ..., _ => Err(code) }}"
-    )
+    todo!("match code {{ 0 => Ok(Status::Ok), -1 => ..., _ => Err(code) }}")
 }
 
 // Also implement TryFrom for idiomatic usage.
@@ -242,9 +227,7 @@ pub struct PacketHeader {
 /// The byte slice must contain a valid PacketHeader representation.
 /// For this struct (all integer fields) any bit pattern is valid,
 /// but this would be UB if the struct contained a bool or enum.
-pub unsafe fn packet_from_bytes_transmute(
-    bytes: &[u8],
-) -> Option<PacketHeader> {
+pub unsafe fn packet_from_bytes_transmute(bytes: &[u8]) -> Option<PacketHeader> {
     todo!(
         "Check len == size_of, then transmute a reference to the \
          first size_of bytes. Hint: *(bytes.as_ptr() as *const _) \
@@ -437,9 +420,7 @@ mod tests {
         let bytes = packet_to_bytes(&header);
         assert_eq!(bytes.len(), mem::size_of::<PacketHeader>());
 
-        let recovered = unsafe {
-            packet_from_bytes_transmute(&bytes)
-        };
+        let recovered = unsafe { packet_from_bytes_transmute(&bytes) };
         assert_eq!(recovered, Some(header));
     }
 
@@ -459,10 +440,7 @@ mod tests {
     #[test]
     fn test_ex23_packet_too_short() {
         let short = [0u8; 2];
-        assert_eq!(
-            unsafe { packet_from_bytes_transmute(&short) },
-            None,
-        );
+        assert_eq!(unsafe { packet_from_bytes_transmute(&short) }, None,);
         assert_eq!(packet_from_bytes_safe(&short), None);
     }
 
@@ -477,10 +455,12 @@ mod tests {
         let bytes = packet_to_bytes(&header);
         // Verify we can read back the exact same fields.
         let h2 = packet_from_bytes_safe(&bytes).unwrap();
-        assert_eq!(h2.magic, 0x0102);
+        let magic = h2.magic;
+        assert_eq!(magic, 0x0102);
         assert_eq!(h2.version, 3);
         assert_eq!(h2.msg_type, 4);
-        assert_eq!(h2.length, 0x05060708);
+        let length = h2.length;
+        assert_eq!(length, 0x05060708);
     }
 
     // ── Part E: Safe alternatives ─────────────────────────────

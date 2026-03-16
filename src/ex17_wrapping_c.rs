@@ -121,7 +121,10 @@ extern "C" {
 
 #[derive(Debug, PartialEq, Eq)]
 pub enum CdbError {
-    // TODO: define the variants
+    Invalid,
+    NotFound,
+    Overflow,
+    Unknown,
 }
 
 impl From<c_int> for CdbError {
