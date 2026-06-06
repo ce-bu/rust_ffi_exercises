@@ -33,16 +33,19 @@
 // Without #[repr(C)] the layout is undefined and C code cannot
 // safely read the fields.
 
+#[repr(C)]
 pub struct Point {
     pub x: f64,
     pub y: f64,
 }
 
+#[repr(C)]
 pub struct Size {
     pub width: f64,
     pub height: f64,
 }
 
+#[repr(C)]
 pub struct Rect {
     pub origin: Point,
     pub size: Size,
@@ -55,13 +58,16 @@ pub struct Rect {
 /// Create a `Point` by value.
 #[no_mangle]
 pub extern "C" fn point_new(x: f64, y: f64) -> Point {
-    todo!("Return a Point {{ x, y }}")
+    Point { x, y }
 }
 
 /// Add two points component-wise, return the result by value.
 #[no_mangle]
 pub extern "C" fn point_add(a: Point, b: Point) -> Point {
-    todo!("Return Point {{ x: a.x + b.x, y: a.y + b.y }}")
+    Point {
+        x: a.x + b.x,
+        y: a.y + b.y,
+    }
 }
 
 /// Scale a point **in place** through a mutable pointer.
@@ -70,13 +76,21 @@ pub extern "C" fn point_add(a: Point, b: Point) -> Point {
 /// `p` must be a valid, non-null, aligned pointer.
 #[no_mangle]
 pub unsafe extern "C" fn point_scale(p: *mut Point, factor: f64) {
-    todo!("Multiply both x and y of *p by factor")
+    let p = unsafe { &mut *p };
+    p.x *= factor;
+    p.y *= factor;
 }
 
 /// Construct a `Rect` from position and dimensions, returned by value.
 #[no_mangle]
 pub extern "C" fn rect_new(x: f64, y: f64, w: f64, h: f64) -> Rect {
-    todo!("Return a Rect with origin (x,y) and size (w,h)")
+    Rect {
+        origin: Point { x, y },
+        size: Size {
+            width: w,
+            height: h,
+        },
+    }
 }
 
 /// Compute the area of a rectangle through a read-only pointer.
@@ -85,7 +99,8 @@ pub extern "C" fn rect_new(x: f64, y: f64, w: f64, h: f64) -> Rect {
 /// `r` must be a valid, non-null pointer.
 #[no_mangle]
 pub unsafe extern "C" fn rect_area(r: *const Rect) -> f64 {
-    todo!("Return width * height from the pointed-to Rect")
+    let r = unsafe { &*r };
+    r.size.height * r.size.width
 }
 
 /// Return `true` if the rectangle contains the given point.
@@ -95,7 +110,12 @@ pub unsafe extern "C" fn rect_area(r: *const Rect) -> f64 {
 /// Both pointers must be valid and non-null.
 #[no_mangle]
 pub unsafe extern "C" fn rect_contains(r: *const Rect, p: *const Point) -> bool {
-    todo!("Check if p is within the bounds of r")
+    let r = unsafe { &*r };
+    let p = unsafe { &*p };
+    r.origin.x <= p.x
+        && p.x <= r.origin.x + r.size.width
+        && r.origin.y <= p.y
+        && p.y <= r.origin.y + r.size.height
 }
 
 // ── Tests ──────────────────────────────────────────────────────
