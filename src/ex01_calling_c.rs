@@ -42,10 +42,10 @@
 //     fn c_add(a: i32, b: i32) -> i32;
 //
 extern "C" {
-    // fn c_add(???) -> ???;
-    // fn c_multiply(???) -> ???;
-    // fn c_distance(???) -> ???;
-    // fn c_abs(???) -> ???;
+    fn c_add(a: i32, b: i32) -> i32;
+    fn c_multiply(a: i32, b: i32) -> i32;
+    fn c_distance(x1: f64, y1: f64, x2: f64, y2: f64) -> f64;
+    fn c_abs(a: i32) -> i32;
 }
 
 // ── TODO 2 ─────────────────────────────────────────────────────
@@ -54,22 +54,22 @@ extern "C" {
 
 /// Returns `a + b` (delegates to C).
 pub fn add(a: i32, b: i32) -> i32 {
-    todo!("Call c_add in an unsafe block")
+    unsafe { c_add(a, b) }
 }
 
 /// Returns `a * b` (delegates to C).
 pub fn multiply(a: i32, b: i32) -> i32 {
-    todo!("Call c_multiply in an unsafe block")
+    unsafe { c_multiply(a, b) }
 }
 
 /// Euclidean distance between `(x1,y1)` and `(x2,y2)`.
 pub fn distance(x1: f64, y1: f64, x2: f64, y2: f64) -> f64 {
-    todo!("Call c_distance in an unsafe block")
+    unsafe { c_distance(x1, y1, x2, y2) }
 }
 
 /// Absolute value of `x` (delegates to C).
 pub fn abs(x: i32) -> i32 {
-    todo!("Call c_abs in an unsafe block")
+    unsafe { c_abs(x) }
 }
 
 // ── Tests ──────────────────────────────────────────────────────

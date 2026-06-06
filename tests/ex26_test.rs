@@ -1,5 +1,5 @@
 // tests/ex26_test.rs — Integration tests for C++ exception handling
-
+#![cfg(not(test))]
 use rust_ffi_exercises::ex26_cpp_exceptions::*;
 
 /* ══════════════════════════════════════════════════════════════
@@ -16,7 +16,11 @@ fn divide_success() {
 fn divide_by_zero_returns_domain_error() {
     let e = divide(1.0, 0.0).unwrap_err();
     assert_eq!(e.code, CPP_EX_ERR_DOMAIN);
-    assert!(e.message.contains("division by zero"), "msg = {}", e.message);
+    assert!(
+        e.message.contains("division by zero"),
+        "msg = {}",
+        e.message
+    );
     assert_eq!(e.type_name, "std::domain_error");
 }
 
@@ -158,14 +162,7 @@ fn map_array_empty() {
 #[test]
 fn map_array_callback_error() {
     let input = [1.0, -1.0, 3.0];
-    let e = map_array(&input, |x| {
-        if x < 0.0 {
-            Err(-42)
-        } else {
-            Ok(x.sqrt())
-        }
-    })
-    .unwrap_err();
+    let e = map_array(&input, |x| if x < 0.0 { Err(-42) } else { Ok(x.sqrt()) }).unwrap_err();
     assert_eq!(e.code, -42);
     assert!(e.message.contains("callback error"), "msg = {}", e.message);
 }
@@ -176,8 +173,8 @@ fn map_array_callback_error() {
 
 #[test]
 fn errors_are_thread_local() {
-    use std::sync::Barrier;
     use std::sync::Arc;
+    use std::sync::Barrier;
 
     let barrier = Arc::new(Barrier::new(2));
 

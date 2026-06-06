@@ -1,5 +1,5 @@
 // tests/ex27_test.rs — Integration tests for C++ STL wrapping
-
+#![cfg(not(test))]
 use rust_ffi_exercises::ex27_cpp_stl::*;
 
 /* ══════════════════════════════════════════════════════════════

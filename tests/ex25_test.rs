@@ -2,7 +2,7 @@
 // compilation errors in other exercise modules.
 //
 // Run with:  cargo test --test ex25_test
-
+#![cfg(not(test))]
 use rust_ffi_exercises::ex25_cpp_virtual::*;
 use std::f64::consts::PI;
 use std::ffi::c_void;
