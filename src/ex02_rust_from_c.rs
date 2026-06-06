@@ -41,7 +41,7 @@ pub extern "C" fn rust_add(a: i32, b: i32) -> i32 {
 
 #[no_mangle]
 pub extern "C" fn rust_max(a: i32, b: i32) -> i32 {
-    todo!("Return the larger of a and b")
+    a.max(b)
 }
 
 // ── TODO 2 ─────────────────────────────────────────────────────
@@ -51,7 +51,21 @@ pub extern "C" fn rust_max(a: i32, b: i32) -> i32 {
 
 #[no_mangle]
 pub extern "C" fn rust_fibonacci(n: u32) -> u64 {
-    todo!("Compute the n-th Fibonacci number iteratively")
+    if n == 0 {
+        return 0;
+    }
+    if n == 1 {
+        return 1;
+    }
+
+    let mut x_1 = 1;
+    let mut x = 1;
+    for _i in 2..n {
+        let tmp = x_1 + x;
+        x_1 = x;
+        x = tmp;
+    }
+    x
 }
 
 // ── TODO 3 ─────────────────────────────────────────────────────
@@ -61,7 +75,29 @@ pub extern "C" fn rust_fibonacci(n: u32) -> u64 {
 
 #[no_mangle]
 pub extern "C" fn rust_is_prime(n: u32) -> bool {
-    todo!("Check whether n is prime")
+    if n <= 1 {
+        return false;
+    }
+    // 2 and 3 are prime numbers
+    if n <= 3 {
+        return true;
+    }
+    // Eliminate multiples of 2 and 3
+    if n.is_multiple_of(2) || n.is_multiple_of(3) {
+        return false;
+    }
+
+    // Check factors up to the square root of n
+    // Using a step of 6 (checking i and i + 2) optimizes the search
+    let mut i = 5;
+    while i * i <= n {
+        if n.is_multiple_of(i) || n.is_multiple_of(i + 2) {
+            return false;
+        }
+        i += 6;
+    }
+
+    true
 }
 
 // ── TODO 4 ─────────────────────────────────────────────────────
@@ -70,8 +106,13 @@ pub extern "C" fn rust_is_prime(n: u32) -> bool {
 // Euclidean algorithm.  `gcd(0, 0)` should return `0`.
 
 #[no_mangle]
-pub extern "C" fn rust_gcd(a: u32, b: u32) -> u32 {
-    todo!("Implement the Euclidean GCD algorithm")
+pub extern "C" fn rust_gcd(mut a: u32, mut b: u32) -> u32 {
+    while b != 0 {
+        let temp = b;
+        b = a % b;
+        a = temp;
+    }
+    a
 }
 
 // ── Tests ──────────────────────────────────────────────────────

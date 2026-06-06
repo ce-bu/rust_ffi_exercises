@@ -41,7 +41,7 @@
 //! 29. `ex29_unsafecell`        — UnsafeCell & aliasing in FFI
 
 pub mod ex01_calling_c;
-// pub mod ex02_rust_from_c;
+pub mod ex02_rust_from_c;
 // pub mod ex03_structs;
 // pub mod ex04_strings;
 // pub mod ex05_opaque;
