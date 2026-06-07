@@ -25,7 +25,10 @@
 //! cargo test ex04
 //! ```
 
-use std::ffi::{c_char, CStr, CString};
+use std::{
+    ffi::{c_char, CStr, CString},
+    ptr,
+};
 
 // ── TODO 1 ─────────────────────────────────────────────────────
 //
@@ -38,7 +41,15 @@ use std::ffi::{c_char, CStr, CString};
 /// If non-null, `s` must point to a valid null-terminated C string.
 #[no_mangle]
 pub unsafe extern "C" fn ffi_string_length(s: *const c_char) -> usize {
-    todo!("Return the byte-length of the C string (0 if null)")
+    if s.is_null() {
+        return 0;
+    }
+    let s = unsafe { CStr::from_ptr(s) };
+    if let Ok(s) = s.to_str() {
+        s.len()
+    } else {
+        0
+    }
 }
 
 // ── TODO 2 ─────────────────────────────────────────────────────
@@ -55,7 +66,12 @@ pub unsafe extern "C" fn ffi_string_length(s: *const c_char) -> usize {
 /// If non-null, `name` must point to a valid null-terminated C string.
 #[no_mangle]
 pub unsafe extern "C" fn ffi_hello(name: *const c_char) -> *mut c_char {
-    todo!("Allocate and return a greeting string, or null")
+    if name.is_null() {
+        return ptr::null_mut();
+    }
+    let name = unsafe { CStr::from_ptr(name) };
+    let s = CString::new(format!("Hello, {}!", name.to_string_lossy()));
+    s.unwrap().into_raw()
 }
 
 // ── TODO 3 ─────────────────────────────────────────────────────
@@ -71,7 +87,9 @@ pub unsafe extern "C" fn ffi_hello(name: *const c_char) -> *mut c_char {
 /// `s` must have been allocated by `CString::into_raw`, or be null.
 #[no_mangle]
 pub unsafe extern "C" fn ffi_free_string(s: *mut c_char) {
-    todo!("Reclaim and drop the CString (no-op if null)")
+    unsafe {
+        let _ = CString::from_raw(s);
+    };
 }
 
 // ── TODO 4 ─────────────────────────────────────────────────────
@@ -97,7 +115,14 @@ pub unsafe extern "C" fn ffi_to_uppercase(
     buf: *mut c_char,
     buf_len: usize,
 ) -> isize {
-    todo!("Uppercase the input and write into buf; return length or -1")
+    let input = { CStr::from_ptr(input) };
+    let input = input.to_str().unwrap().to_uppercase();
+    let count = input.len();
+    if count + 1 > buf_len {
+        return -1;
+    }
+    std::ptr::copy_nonoverlapping(input.as_ptr(), buf as *mut _, count + 1);
+    count as isize
 }
 
 // ── TODO 5 ─────────────────────────────────────────────────────
@@ -116,7 +141,20 @@ pub unsafe extern "C" fn ffi_concat(
     b: *const c_char,
     sep: *const c_char,
 ) -> *mut c_char {
-    todo!("Concatenate a + sep + b into a new CString and return its raw pointer")
+    if a.is_null() || b.is_null() || sep.is_null() {
+        return ptr::null_mut();
+    }
+    let a = { CStr::from_ptr(a) };
+    let b = { CStr::from_ptr(b) };
+    let sep = { CStr::from_ptr(sep) };
+    let r = format!(
+        "{}{}{}",
+        a.to_str().unwrap(),
+        sep.to_str().unwrap(),
+        b.to_str().unwrap()
+    );
+    let r = CString::new(r).unwrap();
+    r.into_raw()
 }
 
 // ── Tests ──────────────────────────────────────────────────────
@@ -160,13 +198,9 @@ mod tests {
     fn test_ex04_to_uppercase() {
         let input = CString::new("hello").unwrap();
         let mut buf = vec![0i8; 64];
-        let n = unsafe {
-            ffi_to_uppercase(input.as_ptr(), buf.as_mut_ptr(), buf.len())
-        };
+        let n = unsafe { ffi_to_uppercase(input.as_ptr(), buf.as_mut_ptr(), buf.len()) };
         assert_eq!(n, 5);
-        let result = unsafe { CStr::from_ptr(buf.as_ptr()) }
-            .to_str()
-            .unwrap();
+        let result = unsafe { CStr::from_ptr(buf.as_ptr()) }.to_str().unwrap();
         assert_eq!(result, "HELLO");
     }
 
@@ -174,9 +208,7 @@ mod tests {
     fn test_ex04_to_uppercase_too_small() {
         let input = CString::new("hello").unwrap();
         let mut buf = vec![0i8; 3]; // too small for "HELLO\0"
-        let n = unsafe {
-            ffi_to_uppercase(input.as_ptr(), buf.as_mut_ptr(), buf.len())
-        };
+        let n = unsafe { ffi_to_uppercase(input.as_ptr(), buf.as_mut_ptr(), buf.len()) };
         assert_eq!(n, -1);
     }
 
