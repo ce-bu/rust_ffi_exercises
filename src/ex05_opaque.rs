@@ -27,6 +27,7 @@
 
 use std::collections::HashMap;
 use std::ffi::{c_char, CStr, CString};
+use std::ptr;
 
 // ── TODO 1 ─────────────────────────────────────────────────────
 //
@@ -35,8 +36,9 @@ use std::ffi::{c_char, CStr, CString};
 //
 // Internally it should wrap a `HashMap<String, String>`.
 
+#[derive(Default)]
 pub struct Config {
-    // TODO: add a field for the inner HashMap
+    inner: HashMap<String, String>,
 }
 
 // ── TODO 2 ─────────────────────────────────────────────────────
@@ -55,7 +57,8 @@ pub struct Config {
 /// Create a new, empty `Config`.
 #[no_mangle]
 pub extern "C" fn config_new() -> *mut Config {
-    todo!("Box::new(Config {{ ... }}) then Box::into_raw")
+    let cfg = Box::new(Config::default());
+    Box::into_raw(cfg)
 }
 
 /// Insert or update a key-value pair.
@@ -64,12 +67,11 @@ pub extern "C" fn config_new() -> *mut Config {
 /// - `cfg` must be a valid pointer from `config_new`.
 /// - `key` and `value` must be valid C strings.
 #[no_mangle]
-pub unsafe extern "C" fn config_set(
-    cfg: *mut Config,
-    key: *const c_char,
-    value: *const c_char,
-) {
-    todo!("Convert key/value from CStr, insert into the HashMap")
+pub unsafe extern "C" fn config_set(cfg: *mut Config, key: *const c_char, value: *const c_char) {
+    let cfg = unsafe { &mut *cfg };
+    let key = CStr::from_ptr(key).to_str().unwrap();
+    let value = CStr::from_ptr(value).to_str().unwrap();
+    cfg.inner.insert(key.to_string(), value.to_string());
 }
 
 /// Retrieve the value for `key`.  Returns a **new** heap-allocated
@@ -80,11 +82,16 @@ pub unsafe extern "C" fn config_set(
 /// - `cfg` must be a valid pointer from `config_new`.
 /// - `key` must be a valid C string.
 #[no_mangle]
-pub unsafe extern "C" fn config_get(
-    cfg: *const Config,
-    key: *const c_char,
-) -> *mut c_char {
-    todo!("Look up key in HashMap, return CString::into_raw or null")
+pub unsafe extern "C" fn config_get(cfg: *const Config, key: *const c_char) -> *mut c_char {
+    let cfg = unsafe { &*cfg };
+    let key = CStr::from_ptr(key).to_str().unwrap();
+    if let Some(value) = cfg.inner.get(key) {
+        let arg = value.as_bytes();
+        let out = CString::new(arg).unwrap();
+        out.into_raw()
+    } else {
+        ptr::null_mut()
+    }
 }
 
 /// Remove a key.  Returns `true` if the key existed.
@@ -93,11 +100,10 @@ pub unsafe extern "C" fn config_get(
 /// - `cfg` must be a valid pointer from `config_new`.
 /// - `key` must be a valid C string.
 #[no_mangle]
-pub unsafe extern "C" fn config_remove(
-    cfg: *mut Config,
-    key: *const c_char,
-) -> bool {
-    todo!("Remove the key from the HashMap")
+pub unsafe extern "C" fn config_remove(cfg: *mut Config, key: *const c_char) -> bool {
+    let cfg = unsafe { &mut *cfg };
+    let key = CStr::from_ptr(key).to_str().unwrap();
+    cfg.inner.remove(key).is_some()
 }
 
 /// Return the number of stored key-value pairs.
@@ -106,7 +112,8 @@ pub unsafe extern "C" fn config_remove(
 /// `cfg` must be a valid pointer from `config_new`.
 #[no_mangle]
 pub unsafe extern "C" fn config_count(cfg: *const Config) -> usize {
-    todo!("Return HashMap::len()")
+    let cfg = unsafe { &*cfg };
+    cfg.inner.len()
 }
 
 /// Free a string returned by `config_get`.
@@ -115,7 +122,7 @@ pub unsafe extern "C" fn config_count(cfg: *const Config) -> usize {
 /// `s` was allocated by `CString::into_raw`, or is null.
 #[no_mangle]
 pub unsafe extern "C" fn config_free_string(s: *mut c_char) {
-    todo!("Reclaim CString via from_raw (no-op if null)")
+    let _ = CString::from_raw(s);
 }
 
 /// Destroy the Config, releasing all memory.
@@ -125,7 +132,7 @@ pub unsafe extern "C" fn config_free_string(s: *mut c_char) {
 /// used after this call.
 #[no_mangle]
 pub unsafe extern "C" fn config_free(cfg: *mut Config) {
-    todo!("Box::from_raw(cfg) — dropping the Box frees everything")
+    let _ = Box::from_raw(cfg);
 }
 
 // ── Tests ──────────────────────────────────────────────────────
@@ -134,7 +141,6 @@ pub unsafe extern "C" fn config_free(cfg: *mut Config) {
 mod tests {
     use super::*;
     use std::ffi::{CStr, CString};
-    use std::ptr;
 
     /// Helper: create a CString and return its pointer.
     fn cstr(s: &str) -> CString {
